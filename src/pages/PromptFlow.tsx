@@ -544,7 +544,32 @@ export default function PromptFlow() {
             </div>
           </div>
         )}
-        {activeTab === 'execution' && <ExecutionEngine />}
+        {activeTab === 'execution' && (
+          <ExecutionEngine
+            workflowId={selectedFlow?.id?.toString() || 'default'}
+            nodes={flowNodes}
+            connections={[
+              { id: 'e1', source: 'start', target: 'prompt1' },
+              { id: 'e2', source: 'prompt1', target: 'condition1' },
+              { id: 'e3', source: 'condition1', target: 'prompt2' },
+              { id: 'e4', source: 'condition1', target: 'prompt3' },
+              { id: 'e5', source: 'prompt2', target: 'end' },
+              { id: 'e6', source: 'prompt3', target: 'end' }
+            ]}
+            onExecutionStart={() => {
+              setIsRunning(true);
+              toast.success('Workflow execution started');
+            }}
+            onExecutionComplete={(success) => {
+              setIsRunning(false);
+              if (success) {
+                toast.success('Workflow execution completed successfully');
+              } else {
+                toast.error('Workflow execution failed');
+              }
+            }}
+          />
+        )}
         {activeTab === 'monitoring' && <MonitoringDashboard />}
         {activeTab === 'scheduling' && <SchedulingSystem />}
       </div>

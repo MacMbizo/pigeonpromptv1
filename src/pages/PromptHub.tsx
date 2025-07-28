@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Search,
   Filter,
@@ -23,7 +28,12 @@ import {
   TrendingUp,
   Award,
   Crown,
-  ShoppingCart
+  ShoppingCart,
+  X,
+  CheckCircle,
+  AlertCircle,
+  Info,
+  Bell
 } from "lucide-react";
 import { toast } from "sonner";
 import CollaborationPanel from "../components/CollaborationPanel";
@@ -143,6 +153,26 @@ export default function PromptHub() {
   const [selectedTab, setSelectedTab] = useState("discover");
   const [selectedFilter, setSelectedFilter] = useState("trending");
   const [showCollaboration, setShowCollaboration] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showNewPrompt, setShowNewPrompt] = useState(false);
+  const [showSharePrompt, setShowSharePrompt] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedPromptToShare, setSelectedPromptToShare] = useState<any>(null);
+  const [newPromptData, setNewPromptData] = useState({
+    name: '',
+    description: '',
+    content: '',
+    tags: '',
+    category: 'general',
+    isPublic: false
+  });
+  const [filterOptions, setFilterOptions] = useState({
+    category: 'all',
+    difficulty: 'all',
+    tags: '',
+    author: '',
+    dateRange: 'all'
+  });
 
   const tabs = [
     { id: "discover", label: "Discover", icon: Globe },
@@ -194,7 +224,103 @@ export default function PromptHub() {
   };
 
   const handleSharePrompt = (prompt: any) => {
-    toast.success(`Shared "${prompt.name}"`);
+    setSelectedPromptToShare(prompt);
+    setShowSharePrompt(true);
+  };
+  
+  const handleCreatePrompt = () => {
+    if (!newPromptData.name.trim()) {
+      toast.error('Please enter a prompt name');
+      return;
+    }
+    
+    // Save to localStorage (mock backend)
+    const prompts = JSON.parse(localStorage.getItem('promptops_prompts') || '[]');
+    const newPrompt = {
+      id: Date.now(),
+      name: newPromptData.name,
+      description: newPromptData.description,
+      content: newPromptData.content,
+      tags: newPromptData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+      category: newPromptData.category,
+      isPublic: newPromptData.isPublic,
+      author: 'You',
+      createdAt: new Date().toISOString(),
+      status: 'draft',
+      stars: 0,
+      downloads: 0,
+      likes: 0,
+      comments: 0
+    };
+    
+    prompts.push(newPrompt);
+    localStorage.setItem('promptops_prompts', JSON.stringify(prompts));
+    
+    toast.success(`Prompt "${newPromptData.name}" created successfully!`);
+    setShowNewPrompt(false);
+    setNewPromptData({
+      name: '',
+      description: '',
+      content: '',
+      tags: '',
+      category: 'general',
+      isPublic: false
+    });
+  };
+  
+  const handleApplyFilters = () => {
+    toast.success('Filters applied successfully!');
+    setShowFilters(false);
+  };
+  
+  const handleShareViaLink = () => {
+    navigator.clipboard.writeText(`https://promptops.com/prompts/${selectedPromptToShare?.id}`);
+    toast.success('Share link copied to clipboard!');
+    setShowSharePrompt(false);
+  };
+  
+  const handleShareViaEmail = () => {
+    const subject = `Check out this prompt: ${selectedPromptToShare?.name}`;
+    const body = `I found this great prompt on PromptOps: ${selectedPromptToShare?.description}\n\nView it here: https://promptops.com/prompts/${selectedPromptToShare?.id}`;
+    window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    setShowSharePrompt(false);
+  };
+  
+  // Mock notifications for hub
+  const hubNotifications = [
+    {
+      id: 1,
+      type: 'info',
+      title: 'New Community Prompt',
+      message: 'Sarah shared a new "Email Marketing" prompt',
+      time: '5 minutes ago',
+      read: false
+    },
+    {
+      id: 2,
+      type: 'success',
+      title: 'Prompt Approved',
+      message: 'Your "Customer Support" prompt was approved for the marketplace',
+      time: '1 hour ago',
+      read: false
+    },
+    {
+      id: 3,
+      type: 'info',
+      title: 'Team Invitation',
+      message: 'You were added to "Marketing Team" workspace',
+      time: '2 hours ago',
+      read: true
+    }
+  ];
+  
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'success': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'warning': return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+      case 'error': return <AlertCircle className="h-4 w-4 text-red-500" />;
+      default: return <Info className="h-4 w-4 text-blue-500" />;
+    }
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -288,14 +414,213 @@ export default function PromptHub() {
               </p>
             </div>
             <div className="flex items-center space-x-2">
-              <Button variant="outline">
-                <Filter className="h-4 w-4 mr-2" />
-                Filter
-              </Button>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                New Prompt
-              </Button>
+              <Dialog open={showFilters} onOpenChange={setShowFilters}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filter
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle>Advanced Filters</DialogTitle>
+                    <DialogDescription>
+                      Refine your search with advanced filtering options.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="category" className="text-right">
+                        Category
+                      </Label>
+                      <select 
+                        id="category" 
+                        value={filterOptions.category}
+                        onChange={(e) => setFilterOptions(prev => ({ ...prev, category: e.target.value }))}
+                        className="col-span-3 p-2 border border-border rounded"
+                      >
+                        <option value="all">All Categories</option>
+                        <option value="customer-support">Customer Support</option>
+                        <option value="content-generation">Content Generation</option>
+                        <option value="code-review">Code Review</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="data-analysis">Data Analysis</option>
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="difficulty" className="text-right">
+                        Difficulty
+                      </Label>
+                      <select 
+                        id="difficulty" 
+                        value={filterOptions.difficulty}
+                        onChange={(e) => setFilterOptions(prev => ({ ...prev, difficulty: e.target.value }))}
+                        className="col-span-3 p-2 border border-border rounded"
+                      >
+                        <option value="all">All Levels</option>
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                        <option value="expert">Expert</option>
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="tags" className="text-right">
+                        Tags
+                      </Label>
+                      <Input
+                        id="tags"
+                        value={filterOptions.tags}
+                        onChange={(e) => setFilterOptions(prev => ({ ...prev, tags: e.target.value }))}
+                        placeholder="Enter tags separated by commas"
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="author" className="text-right">
+                        Author
+                      </Label>
+                      <Input
+                        id="author"
+                        value={filterOptions.author}
+                        onChange={(e) => setFilterOptions(prev => ({ ...prev, author: e.target.value }))}
+                        placeholder="Filter by author name"
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="dateRange" className="text-right">
+                        Date Range
+                      </Label>
+                      <select 
+                        id="dateRange" 
+                        value={filterOptions.dateRange}
+                        onChange={(e) => setFilterOptions(prev => ({ ...prev, dateRange: e.target.value }))}
+                        className="col-span-3 p-2 border border-border rounded"
+                      >
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="year">This Year</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setShowFilters(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleApplyFilters}>
+                      Apply Filters
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              
+              <Dialog open={showNewPrompt} onOpenChange={setShowNewPrompt}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Prompt
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
+                    <DialogTitle>Create New Prompt</DialogTitle>
+                    <DialogDescription>
+                      Create a new prompt template for your workspace.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="promptName" className="text-right">
+                        Name
+                      </Label>
+                      <Input
+                        id="promptName"
+                        value={newPromptData.name}
+                        onChange={(e) => setNewPromptData(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="My Awesome Prompt"
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="promptDescription" className="text-right">
+                        Description
+                      </Label>
+                      <Textarea
+                        id="promptDescription"
+                        value={newPromptData.description}
+                        onChange={(e) => setNewPromptData(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Describe what this prompt does..."
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="promptContent" className="text-right">
+                        Content
+                      </Label>
+                      <Textarea
+                        id="promptContent"
+                        value={newPromptData.content}
+                        onChange={(e) => setNewPromptData(prev => ({ ...prev, content: e.target.value }))}
+                        placeholder="Enter your prompt template here..."
+                        className="col-span-3 min-h-[100px]"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="promptTags" className="text-right">
+                        Tags
+                      </Label>
+                      <Input
+                        id="promptTags"
+                        value={newPromptData.tags}
+                        onChange={(e) => setNewPromptData(prev => ({ ...prev, tags: e.target.value }))}
+                        placeholder="tag1, tag2, tag3"
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="promptCategory" className="text-right">
+                        Category
+                      </Label>
+                      <select 
+                        id="promptCategory" 
+                        value={newPromptData.category}
+                        onChange={(e) => setNewPromptData(prev => ({ ...prev, category: e.target.value }))}
+                        className="col-span-3 p-2 border border-border rounded"
+                      >
+                        <option value="general">General</option>
+                        <option value="customer-support">Customer Support</option>
+                        <option value="content-generation">Content Generation</option>
+                        <option value="code-review">Code Review</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="data-analysis">Data Analysis</option>
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="isPublic" className="text-right">
+                        Make Public
+                      </Label>
+                      <input 
+                        type="checkbox" 
+                        id="isPublic" 
+                        checked={newPromptData.isPublic}
+                        onChange={(e) => setNewPromptData(prev => ({ ...prev, isPublic: e.target.checked }))}
+                        className="col-span-3" 
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setShowNewPrompt(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreatePrompt}>
+                      Create Prompt
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
 
@@ -356,6 +681,118 @@ export default function PromptHub() {
         <div className="flex-1 p-4 overflow-y-auto">
           {selectedTab === "discover" && (
             <div className="space-y-6">
+              {/* Filter Controls */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-4">
+                  <Button
+                    variant={selectedFilter === "trending" ? "default" : "outline"}
+                    onClick={() => setSelectedFilter("trending")}
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Trending
+                  </Button>
+                  <Button
+                    variant={selectedFilter === "featured" ? "default" : "outline"}
+                    onClick={() => setSelectedFilter("featured")}
+                  >
+                    <Award className="h-4 w-4 mr-2" />
+                    Featured
+                  </Button>
+                  <Button
+                    variant={selectedFilter === "new" ? "default" : "outline"}
+                    onClick={() => setSelectedFilter("new")}
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    New
+                  </Button>
+                </div>
+                <Dialog open={showFilters} onOpenChange={setShowFilters}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <Filter className="h-4 w-4 mr-2" />
+                      More Filters
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                      <DialogTitle>Discover Filters</DialogTitle>
+                      <DialogDescription>
+                        Filter prompts by category, difficulty, and more.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="discoverCategory" className="text-right">
+                          Category
+                        </Label>
+                        <select 
+                          id="discoverCategory" 
+                          value={filterOptions.category}
+                          onChange={(e) => setFilterOptions(prev => ({ ...prev, category: e.target.value }))}
+                          className="col-span-3 p-2 border border-border rounded"
+                        >
+                          <option value="all">All Categories</option>
+                          <option value="customer-support">Customer Support</option>
+                          <option value="content-generation">Content Generation</option>
+                          <option value="code-review">Code Review</option>
+                          <option value="marketing">Marketing</option>
+                          <option value="data-analysis">Data Analysis</option>
+                        </select>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="discoverDifficulty" className="text-right">
+                          Difficulty
+                        </Label>
+                        <select 
+                          id="discoverDifficulty" 
+                          value={filterOptions.difficulty}
+                          onChange={(e) => setFilterOptions(prev => ({ ...prev, difficulty: e.target.value }))}
+                          className="col-span-3 p-2 border border-border rounded"
+                        >
+                          <option value="all">All Levels</option>
+                          <option value="beginner">Beginner</option>
+                          <option value="intermediate">Intermediate</option>
+                          <option value="advanced">Advanced</option>
+                          <option value="expert">Expert</option>
+                        </select>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="discoverTags" className="text-right">
+                          Tags
+                        </Label>
+                        <Input
+                          id="discoverTags"
+                          value={filterOptions.tags}
+                          onChange={(e) => setFilterOptions(prev => ({ ...prev, tags: e.target.value }))}
+                          placeholder="Enter tags separated by commas"
+                          className="col-span-3"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="discoverAuthor" className="text-right">
+                          Author
+                        </Label>
+                        <Input
+                          id="discoverAuthor"
+                          value={filterOptions.author}
+                          onChange={(e) => setFilterOptions(prev => ({ ...prev, author: e.target.value }))}
+                          placeholder="Filter by author name"
+                          className="col-span-3"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button variant="outline" onClick={() => setShowFilters(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleApplyFilters}>
+                        Apply Filters
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              
               {/* Featured Section */}
               <div className="mb-8">
                 <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -396,7 +833,328 @@ export default function PromptHub() {
           
           {selectedTab === "marketplace" && <MarketplaceFeatures />}
           
-          {selectedTab === "team" && <TeamCollaboration />}
+          {selectedTab === "team" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold">Team Collaboration</h3>
+                <Dialog open={showNotifications} onOpenChange={setShowNotifications}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Bell className="h-4 w-4 mr-2" />
+                      Notifications
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                      <DialogTitle>Team Notifications</DialogTitle>
+                      <DialogDescription>
+                        Stay updated with your team's activity and collaboration.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="max-h-[400px] overflow-y-auto">
+                      {hubNotifications.map((notification) => (
+                        <div key={notification.id} className={`p-4 border-b border-border ${!notification.read ? 'bg-blue-50 dark:bg-blue-950/20' : ''}`}>
+                          <div className="flex items-start space-x-3">
+                            {getNotificationIcon(notification.type)}
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium text-sm">{notification.title}</h4>
+                                <span className="text-xs text-muted-foreground">{notification.time}</span>
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
+                              {!notification.read && (
+                                <Badge variant="secondary" className="mt-2 text-xs">
+                                  New
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-end space-x-2 pt-4">
+                      <Button variant="outline" onClick={() => {
+                        toast.success('All notifications marked as read');
+                        setShowNotifications(false);
+                      }}>
+                        Mark All Read
+                      </Button>
+                      <Button onClick={() => setShowNotifications(false)}>
+                        Close
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Users className="h-5 w-5 mr-2" />
+                      Active Team Members
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {[
+                        { name: "Sarah Chen", role: "Lead Prompt Engineer", status: "online" },
+                        { name: "Mike Johnson", role: "AI Researcher", status: "away" },
+                        { name: "Emily Davis", role: "Content Strategist", status: "online" },
+                        { name: "Alex Kim", role: "Developer", status: "offline" }
+                      ].map((member, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{member.name}</p>
+                            <p className="text-sm text-muted-foreground">{member.role}</p>
+                          </div>
+                          <div className={`w-3 h-3 rounded-full ${
+                            member.status === 'online' ? 'bg-green-500' :
+                            member.status === 'away' ? 'bg-yellow-500' : 'bg-gray-400'
+                          }`} />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <MessageCircle className="h-5 w-5 mr-2" />
+                      Recent Activity
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {[
+                        { user: "Sarah", action: "shared", item: "Customer Support Template", time: "2 hours ago" },
+                        { user: "Mike", action: "updated", item: "Code Review Prompt", time: "4 hours ago" },
+                        { user: "Emily", action: "created", item: "Marketing Copy Generator", time: "1 day ago" },
+                        { user: "Alex", action: "commented on", item: "API Documentation Helper", time: "2 days ago" }
+                      ].map((activity, index) => (
+                        <div key={index} className="text-sm">
+                          <span className="font-medium">{activity.user}</span>
+                          <span className="text-muted-foreground"> {activity.action} </span>
+                          <span className="font-medium">{activity.item}</span>
+                          <span className="text-muted-foreground"> • {activity.time}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Team Prompts</CardTitle>
+                    <div className="flex items-center space-x-2">
+                      <Dialog open={showFilters} onOpenChange={setShowFilters}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Filter className="h-4 w-4 mr-2" />
+                            Filter
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[500px]">
+                          <DialogHeader>
+                            <DialogTitle>Team Prompt Filters</DialogTitle>
+                            <DialogDescription>
+                              Filter team prompts by various criteria.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="teamCategory" className="text-right">
+                                Category
+                              </Label>
+                              <select 
+                                id="teamCategory" 
+                                value={filterOptions.category}
+                                onChange={(e) => setFilterOptions(prev => ({ ...prev, category: e.target.value }))}
+                                className="col-span-3 p-2 border border-border rounded"
+                              >
+                                <option value="all">All Categories</option>
+                                <option value="customer-support">Customer Support</option>
+                                <option value="content-generation">Content Generation</option>
+                                <option value="code-review">Code Review</option>
+                                <option value="marketing">Marketing</option>
+                                <option value="data-analysis">Data Analysis</option>
+                              </select>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="teamAuthor" className="text-right">
+                                Team Member
+                              </Label>
+                              <Input
+                                id="teamAuthor"
+                                value={filterOptions.author}
+                                onChange={(e) => setFilterOptions(prev => ({ ...prev, author: e.target.value }))}
+                                placeholder="Filter by team member"
+                                className="col-span-3"
+                              />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="teamDateRange" className="text-right">
+                                Date Range
+                              </Label>
+                              <select 
+                                id="teamDateRange" 
+                                value={filterOptions.dateRange}
+                                onChange={(e) => setFilterOptions(prev => ({ ...prev, dateRange: e.target.value }))}
+                                className="col-span-3 p-2 border border-border rounded"
+                              >
+                                <option value="all">All Time</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="year">This Year</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={() => setShowFilters(false)}>
+                              Cancel
+                            </Button>
+                            <Button onClick={handleApplyFilters}>
+                              Apply Filters
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      
+                      <Dialog open={showNewPrompt} onOpenChange={setShowNewPrompt}>
+                        <DialogTrigger asChild>
+                          <Button size="sm">
+                            <Plus className="h-4 w-4 mr-2" />
+                            New Prompt
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px]">
+                          <DialogHeader>
+                            <DialogTitle>Create Team Prompt</DialogTitle>
+                            <DialogDescription>
+                              Create a new prompt for your team workspace.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="teamPromptName" className="text-right">
+                                Name
+                              </Label>
+                              <Input
+                                id="teamPromptName"
+                                value={newPromptData.name}
+                                onChange={(e) => setNewPromptData(prev => ({ ...prev, name: e.target.value }))}
+                                placeholder="Team Prompt Name"
+                                className="col-span-3"
+                              />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="teamPromptDescription" className="text-right">
+                                Description
+                              </Label>
+                              <Textarea
+                                id="teamPromptDescription"
+                                value={newPromptData.description}
+                                onChange={(e) => setNewPromptData(prev => ({ ...prev, description: e.target.value }))}
+                                placeholder="Describe this team prompt..."
+                                className="col-span-3"
+                              />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="teamPromptContent" className="text-right">
+                                Content
+                              </Label>
+                              <Textarea
+                                id="teamPromptContent"
+                                value={newPromptData.content}
+                                onChange={(e) => setNewPromptData(prev => ({ ...prev, content: e.target.value }))}
+                                placeholder="Enter your team prompt template here..."
+                                className="col-span-3 min-h-[100px]"
+                              />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="teamPromptTags" className="text-right">
+                                Tags
+                              </Label>
+                              <Input
+                                id="teamPromptTags"
+                                value={newPromptData.tags}
+                                onChange={(e) => setNewPromptData(prev => ({ ...prev, tags: e.target.value }))}
+                                placeholder="tag1, tag2, tag3"
+                                className="col-span-3"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={() => setShowNewPrompt(false)}>
+                              Cancel
+                            </Button>
+                            <Button onClick={handleCreatePrompt}>
+                              Create Team Prompt
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {prompts.slice(0, 6).map((prompt) => (
+                      <Card key={prompt.id} className="hover:shadow-md transition-shadow">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <CardTitle className="text-sm">{prompt.name}</CardTitle>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                by {prompt.author}
+                              </p>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Button variant="ghost" size="sm">
+                                <Heart className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Bookmark className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <p className="text-xs text-muted-foreground mb-3">
+                            {prompt.description}
+                          </p>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <div className="flex items-center space-x-3">
+                              <span className="flex items-center">
+                                <Star className="h-3 w-3 mr-1" />
+                                {prompt.stars}
+                              </span>
+                              <span className="flex items-center">
+                                <Download className="h-3 w-3 mr-1" />
+                                {prompt.downloads}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Button variant="ghost" size="sm">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Share2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {filteredPrompts.length === 0 ? (
             <div className="text-center py-12">
@@ -511,14 +1269,85 @@ export default function PromptHub() {
                           >
                             <Bookmark className="w-4 h-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="p-1 h-8 w-8"
-                            onClick={() => handleSharePrompt(prompt)}
-                          >
-                            <Share2 className="w-4 h-4" />
-                          </Button>
+                          <Dialog open={showSharePrompt && selectedPromptToShare?.id === prompt.id} onOpenChange={(open) => {
+                            if (!open) {
+                              setShowSharePrompt(false);
+                              setSelectedPromptToShare(null);
+                            }
+                          }}>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="p-1 h-8 w-8"
+                                onClick={() => handleSharePrompt(prompt)}
+                              >
+                                <Share2 className="w-4 h-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[500px]">
+                              <DialogHeader>
+                                <DialogTitle>Share Prompt</DialogTitle>
+                                <DialogDescription>
+                                  Share "{selectedPromptToShare?.name}" with others.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div className="space-y-4">
+                                  <div className="p-4 border border-border rounded-lg">
+                                    <h4 className="font-medium mb-2">Share via Link</h4>
+                                    <p className="text-sm text-muted-foreground mb-3">
+                                      Copy the link to share this prompt with anyone.
+                                    </p>
+                                    <Button onClick={handleShareViaLink} className="w-full">
+                                      <Share2 className="h-4 w-4 mr-2" />
+                                      Copy Share Link
+                                    </Button>
+                                  </div>
+                                  
+                                  <div className="p-4 border border-border rounded-lg">
+                                    <h4 className="font-medium mb-2">Share via Email</h4>
+                                    <p className="text-sm text-muted-foreground mb-3">
+                                      Send this prompt via email to colleagues.
+                                    </p>
+                                    <Button onClick={handleShareViaEmail} variant="outline" className="w-full">
+                                      <MessageCircle className="h-4 w-4 mr-2" />
+                                      Share via Email
+                                    </Button>
+                                  </div>
+                                  
+                                  <div className="p-4 border border-border rounded-lg">
+                                    <h4 className="font-medium mb-2">Export Options</h4>
+                                    <p className="text-sm text-muted-foreground mb-3">
+                                      Download or export this prompt in different formats.
+                                    </p>
+                                    <div className="flex space-x-2">
+                                      <Button onClick={() => {
+                                        toast.success('Prompt exported as JSON');
+                                        setShowSharePrompt(false);
+                                      }} variant="outline" size="sm">
+                                        Export JSON
+                                      </Button>
+                                      <Button onClick={() => {
+                                        toast.success('Prompt exported as Markdown');
+                                        setShowSharePrompt(false);
+                                      }} variant="outline" size="sm">
+                                        Export MD
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <Button variant="outline" onClick={() => {
+                                  setShowSharePrompt(false);
+                                  setSelectedPromptToShare(null);
+                                }}>
+                                  Close
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
                         </div>
                         <div className="flex items-center space-x-1">
                           <Button size="sm" variant="ghost">

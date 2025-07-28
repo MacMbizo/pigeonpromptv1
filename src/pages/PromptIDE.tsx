@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Settings,
   Layers,
@@ -59,6 +63,15 @@ export default function PromptIDE() {
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<'editor' | 'testing' | 'version'>('editor');
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [editorSettings, setEditorSettings] = useState({
+    fontSize: '14',
+    theme: 'light',
+    autoSave: true,
+    syntaxHighlighting: true,
+    lineNumbers: true,
+    wordWrap: true
+  });
 
   const handleRun = async () => {
     if (!prompt.trim()) {
@@ -71,7 +84,34 @@ export default function PromptIDE() {
   };
 
   const handleSave = () => {
+    // Save to localStorage (mock backend)
+    const prompts = JSON.parse(localStorage.getItem('promptops_prompts') || '[]');
+    const existingIndex = prompts.findIndex((p: any) => p.name === promptName);
+    
+    const promptData = {
+      id: existingIndex >= 0 ? prompts[existingIndex].id : Date.now(),
+      name: promptName,
+      content: prompt,
+      variables: variables,
+      createdAt: existingIndex >= 0 ? prompts[existingIndex].createdAt : new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'draft'
+    };
+    
+    if (existingIndex >= 0) {
+      prompts[existingIndex] = promptData;
+    } else {
+      prompts.push(promptData);
+    }
+    
+    localStorage.setItem('promptops_prompts', JSON.stringify(prompts));
     toast.success(`Prompt '${promptName}' saved to your workspace`);
+  };
+  
+  const handleSaveSettings = () => {
+    localStorage.setItem('promptops_editor_settings', JSON.stringify(editorSettings));
+    toast.success('Editor settings saved successfully!');
+    setShowSettings(false);
   };
 
   const loadTemplate = (template: any) => {
@@ -134,10 +174,112 @@ export default function PromptIDE() {
               <Layers className="h-4 w-4 mr-2" />
               Templates
             </Button>
-            <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
+            <Dialog open={showSettings} onOpenChange={setShowSettings}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Editor Settings</DialogTitle>
+                  <DialogDescription>
+                    Customize your prompt editing experience.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="fontSize" className="text-right">
+                      Font Size
+                    </Label>
+                    <select 
+                      id="fontSize" 
+                      value={editorSettings.fontSize}
+                      onChange={(e) => setEditorSettings(prev => ({ ...prev, fontSize: e.target.value }))}
+                      className="col-span-3 p-2 border border-border rounded"
+                    >
+                      <option value="12">12px</option>
+                      <option value="14">14px</option>
+                      <option value="16">16px</option>
+                      <option value="18">18px</option>
+                      <option value="20">20px</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="theme" className="text-right">
+                      Theme
+                    </Label>
+                    <select 
+                      id="theme" 
+                      value={editorSettings.theme}
+                      onChange={(e) => setEditorSettings(prev => ({ ...prev, theme: e.target.value }))}
+                      className="col-span-3 p-2 border border-border rounded"
+                    >
+                      <option value="light">Light</option>
+                      <option value="dark">Dark</option>
+                      <option value="auto">Auto</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="autoSave" className="text-right">
+                      Auto Save
+                    </Label>
+                    <input 
+                      type="checkbox" 
+                      id="autoSave" 
+                      checked={editorSettings.autoSave}
+                      onChange={(e) => setEditorSettings(prev => ({ ...prev, autoSave: e.target.checked }))}
+                      className="col-span-3" 
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="syntaxHighlighting" className="text-right">
+                      Syntax Highlighting
+                    </Label>
+                    <input 
+                      type="checkbox" 
+                      id="syntaxHighlighting" 
+                      checked={editorSettings.syntaxHighlighting}
+                      onChange={(e) => setEditorSettings(prev => ({ ...prev, syntaxHighlighting: e.target.checked }))}
+                      className="col-span-3" 
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="lineNumbers" className="text-right">
+                      Line Numbers
+                    </Label>
+                    <input 
+                      type="checkbox" 
+                      id="lineNumbers" 
+                      checked={editorSettings.lineNumbers}
+                      onChange={(e) => setEditorSettings(prev => ({ ...prev, lineNumbers: e.target.checked }))}
+                      className="col-span-3" 
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="wordWrap" className="text-right">
+                      Word Wrap
+                    </Label>
+                    <input 
+                      type="checkbox" 
+                      id="wordWrap" 
+                      checked={editorSettings.wordWrap}
+                      onChange={(e) => setEditorSettings(prev => ({ ...prev, wordWrap: e.target.checked }))}
+                      className="col-span-3" 
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setShowSettings(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSaveSettings}>
+                    Save Settings
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>
