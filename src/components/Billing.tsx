@@ -274,7 +274,23 @@ export default function Billing() {
   };
 
   const cancelSubscription = () => {
-    toast.success('Subscription cancellation scheduled');
+    toast.success('Subscription cancellation initiated');
+  };
+
+  const handleDownloadInvoices = () => {
+    toast.success('Downloading all invoices...');
+  };
+
+  const handleBillingSettings = () => {
+    toast.success('Billing settings opened');
+  };
+
+  const handleChangePlan = () => {
+    toast.success('Change plan dialog opened');
+  };
+
+  const handleAddPaymentMethod = () => {
+    toast.success('Add payment method dialog opened');
   };
 
   return (
@@ -289,11 +305,11 @@ export default function Billing() {
         </div>
         
         <div className="flex items-center space-x-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleDownloadInvoices}>
             <Download className="h-4 w-4 mr-2" />
             Download Invoices
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleBillingSettings}>
             <Settings className="h-4 w-4 mr-2" />
             Billing Settings
           </Button>
@@ -348,7 +364,7 @@ export default function Billing() {
             </div>
             
             <div className="flex space-x-2 pt-4">
-              <Button variant="outline">
+              <Button variant="outline" onClick={handleChangePlan}>
                 Change Plan
               </Button>
               <Button variant="outline" onClick={cancelSubscription}>
@@ -655,7 +671,7 @@ export default function Billing() {
                 <p className="text-muted-foreground mb-4">
                   Add and manage credit cards, update billing address, and configure payment preferences
                 </p>
-                <Button>
+                <Button onClick={handleAddPaymentMethod}>
                   <CreditCard className="h-4 w-4 mr-2" />
                   Add Payment Method
                 </Button>

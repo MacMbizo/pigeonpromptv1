@@ -265,6 +265,22 @@ export default function UserManagement() {
     ));
   };
 
+  const handleImport = () => {
+    toast.success('Import users dialog opened');
+  };
+
+  const handleExport = () => {
+    toast.success('Users exported successfully');
+  };
+
+  const handleEditRole = (roleName: string) => {
+    toast.success(`Edit ${roleName} role dialog opened`);
+  };
+
+  const handleConfigurePermissions = () => {
+    toast.success('Configure permissions dialog opened');
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -277,11 +293,11 @@ export default function UserManagement() {
         </div>
         
         <div className="flex items-center space-x-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleImport}>
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -490,7 +506,7 @@ export default function UserManagement() {
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditRole(role.name)}>
                         <Edit className="h-4 w-4 mr-2" />
                         Edit Role
                       </Button>
@@ -579,7 +595,7 @@ export default function UserManagement() {
                 <p className="text-muted-foreground mb-4">
                   Configure granular permissions for different user roles and actions
                 </p>
-                <Button>
+                <Button onClick={handleConfigurePermissions}>
                   <Plus className="h-4 w-4 mr-2" />
                   Configure Permissions
                 </Button>

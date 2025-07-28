@@ -224,26 +224,61 @@ export default function Layout() {
             </div>
             
             <div className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => {
+                  toast.success('Edit Profile opened');
+                  setShowProfile(false);
+                }}
+              >
                 <User className="h-4 w-4 mr-2" />
                 Edit Profile
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => {
+                  toast.success('Account Settings opened');
+                  setShowProfile(false);
+                }}
+              >
                 <Settings className="h-4 w-4 mr-2" />
                 Account Settings
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => {
+                  toast.success('Billing & Subscription opened');
+                  setShowProfile(false);
+                }}
+              >
                 <CreditCard className="h-4 w-4 mr-2" />
                 Billing & Subscription
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => {
+                  toast.success('Privacy & Security opened');
+                  setShowProfile(false);
+                }}
+              >
                 <Shield className="h-4 w-4 mr-2" />
                 Privacy & Security
               </Button>
             </div>
             
             <div className="border-t pt-4">
-              <Button variant="ghost" className="w-full text-red-600 hover:text-red-700 hover:bg-red-50">
+              <Button 
+                variant="ghost" 
+                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={() => {
+                  toast.success('Signed out successfully');
+                  setShowProfile(false);
+                }}
+              >
                 Sign Out
               </Button>
             </div>

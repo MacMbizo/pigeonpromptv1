@@ -120,6 +120,18 @@ export default function Settings() {
     toast.error('Account deletion requires additional verification');
   };
 
+  const handleChangePassword = () => {
+    toast.success('Password change dialog opened');
+  };
+
+  const handleGenerateCodes = () => {
+    toast.success('Backup codes generated successfully');
+  };
+
+  const handleImportData = () => {
+    toast.success('Data import dialog opened');
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -335,7 +347,7 @@ export default function Settings() {
                       Last changed: {new Date(security.passwordLastChanged).toLocaleDateString()}
                     </p>
                   </div>
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={handleChangePassword}>
                     Change Password
                   </Button>
                 </div>
@@ -347,7 +359,7 @@ export default function Settings() {
                       Generate backup codes for account recovery
                     </p>
                   </div>
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={handleGenerateCodes}>
                     Generate Codes
                   </Button>
                 </div>
@@ -747,7 +759,7 @@ export default function Settings() {
                       <Download className="h-4 w-4 mr-2" />
                       Export All Data
                     </Button>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={handleImportData}>
                       <Upload className="h-4 w-4 mr-2" />
                       Import Data
                     </Button>

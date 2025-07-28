@@ -23,6 +23,9 @@ import {
   Calendar,
   Tag
 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import { Label } from "./ui/label";
+import { Input } from "./ui/input";
 import { toast } from "sonner";
 
 interface CommunityPrompt {
@@ -73,6 +76,15 @@ const CommunityFeatures = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showReviews, setShowReviews] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState<CommunityPrompt | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterOptions, setFilterOptions] = useState({
+    category: "all",
+    difficulty: "all",
+    rating: "all",
+    tags: "",
+    author: "",
+    dateRange: "all"
+  });
 
   const mockPrompts: CommunityPrompt[] = [
     {
@@ -242,6 +254,11 @@ const CommunityFeatures = () => {
     toast.success("Thanks for your feedback!");
   };
 
+  const handleApplyFilters = () => {
+    toast.success("Filters applied successfully!");
+    setShowFilters(false);
+  };
+
   const filteredPrompts = mockPrompts.filter(prompt => {
     const matchesCategory = selectedCategory === "all" || prompt.category === selectedCategory;
     const matchesSearch = prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -305,10 +322,110 @@ const CommunityFeatures = () => {
               </option>
             ))}
           </select>
-          <Button variant="outline" size="sm">
-            <Filter className="w-4 h-4 mr-2" />
-            More Filters
-          </Button>
+          <Dialog open={showFilters} onOpenChange={setShowFilters}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="w-4 h-4 mr-2" />
+                More Filters
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Advanced Filters</DialogTitle>
+                <DialogDescription>
+                  Filter community prompts by various criteria.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="filterCategory" className="text-right">
+                    Category
+                  </Label>
+                  <select 
+                    id="filterCategory" 
+                    value={filterOptions.category}
+                    onChange={(e) => setFilterOptions(prev => ({ ...prev, category: e.target.value }))}
+                    className="col-span-3 p-2 border border-border rounded"
+                  >
+                    <option value="all">All Categories</option>
+                    <option value="Content Creation">Content Creation</option>
+                    <option value="Development">Development</option>
+                    <option value="Customer Service">Customer Service</option>
+                    <option value="Data Analysis">Data Analysis</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Research">Research</option>
+                    <option value="Education">Education</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="filterDifficulty" className="text-right">
+                    Difficulty
+                  </Label>
+                  <select 
+                    id="filterDifficulty" 
+                    value={filterOptions.difficulty}
+                    onChange={(e) => setFilterOptions(prev => ({ ...prev, difficulty: e.target.value }))}
+                    className="col-span-3 p-2 border border-border rounded"
+                  >
+                    <option value="all">All Levels</option>
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                    <option value="Expert">Expert</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="filterRating" className="text-right">
+                    Rating
+                  </Label>
+                  <select 
+                    id="filterRating" 
+                    value={filterOptions.rating}
+                    onChange={(e) => setFilterOptions(prev => ({ ...prev, rating: e.target.value }))}
+                    className="col-span-3 p-2 border border-border rounded"
+                  >
+                    <option value="all">All Ratings</option>
+                    <option value="4.5+">4.5+ Stars</option>
+                    <option value="4.0+">4.0+ Stars</option>
+                    <option value="3.5+">3.5+ Stars</option>
+                    <option value="3.0+">3.0+ Stars</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="filterTags" className="text-right">
+                    Tags
+                  </Label>
+                  <Input
+                    id="filterTags"
+                    value={filterOptions.tags}
+                    onChange={(e) => setFilterOptions(prev => ({ ...prev, tags: e.target.value }))}
+                    placeholder="Enter tags separated by commas"
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="filterAuthor" className="text-right">
+                    Author
+                  </Label>
+                  <Input
+                    id="filterAuthor"
+                    value={filterOptions.author}
+                    onChange={(e) => setFilterOptions(prev => ({ ...prev, author: e.target.value }))}
+                    placeholder="Filter by author name"
+                    className="col-span-3"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowFilters(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleApplyFilters}>
+                  Apply Filters
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

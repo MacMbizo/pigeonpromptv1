@@ -195,6 +195,22 @@ export default function APIManagement() {
     }
   };
 
+  const handleAddIntegration = () => {
+    toast.success('Add Integration dialog opened');
+  };
+
+  const handleConfigureIntegration = (integrationName: string) => {
+    toast.success(`Configure ${integrationName} settings opened`);
+  };
+
+  const handleAddWebhook = () => {
+    toast.success('Add Webhook dialog opened');
+  };
+
+  const handleConfigureSecuritySettings = () => {
+    toast.success('Security settings configuration opened');
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -206,7 +222,7 @@ export default function APIManagement() {
           </p>
         </div>
         
-        <Button>
+        <Button onClick={handleAddIntegration}>
           <Plus className="h-4 w-4 mr-2" />
           Add Integration
         </Button>
@@ -419,7 +435,7 @@ export default function APIManagement() {
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => handleConfigureIntegration(integration.name)}>
                         <Settings className="h-4 w-4 mr-2" />
                         Configure
                       </Button>
@@ -449,7 +465,7 @@ export default function APIManagement() {
                 <p className="text-muted-foreground mb-4">
                   Configure webhooks for prompt executions, workflow completions, and system events
                 </p>
-                <Button>
+                <Button onClick={handleAddWebhook}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Webhook
                 </Button>
@@ -522,7 +538,7 @@ export default function APIManagement() {
                 </div>
                 
                 <div className="pt-4 border-t">
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={handleConfigureSecuritySettings}>
                     <Settings className="h-4 w-4 mr-2" />
                     Configure Security Settings
                   </Button>

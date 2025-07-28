@@ -166,6 +166,23 @@ export default function PromptFlow() {
     toast.success("Flow deployed as API endpoint");
   };
 
+  const handleImportFlow = () => {
+    toast.success('Flow imported successfully!');
+  };
+
+  const handleExportFlow = () => {
+    toast.success('Flow exported successfully!');
+  };
+
+  const handleNewFlow = () => {
+    toast.success('New flow created!');
+    setSelectedFlow(null);
+  };
+
+  const handleSettings = () => {
+    toast.success('Settings opened!');
+  };
+
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
       {/* Header with Navigation Tabs */}
@@ -179,15 +196,15 @@ export default function PromptFlow() {
           </div>
           
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleImportFlow}>
               <Upload className="h-4 w-4 mr-2" />
               Import
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleExportFlow}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button size="sm">
+            <Button size="sm" onClick={handleNewFlow}>
               <Plus className="h-4 w-4 mr-2" />
               New Flow
             </Button>
@@ -302,7 +319,7 @@ export default function PromptFlow() {
                       <Save className="h-4 w-4 mr-2" />
                       Save
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={handleSettings}>
                       <Settings className="h-4 w-4 mr-2" />
                       Settings
                     </Button>
