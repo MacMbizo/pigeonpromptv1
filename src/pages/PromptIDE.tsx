@@ -2,23 +2,26 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Play,
-  Save,
   Settings,
-  Copy,
-  Download,
-  Upload,
+  Layers,
+  TestTube,
+  GitBranch,
+  BarChart3,
   Zap,
-  Clock,
-  DollarSign,
-  BarChart3
+  Target,
+  History
 } from "lucide-react";
 import { toast } from "sonner";
+import PromptEditor from "@/components/PromptEditor";
+import TestingPlayground from "@/components/TestingPlayground";
+import VersionControl from "@/components/VersionControl";
 
 const models = [
   { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", cost: "$0.005/1K tokens" },
   { id: "claude-3-opus", name: "Claude 3 Opus", provider: "Anthropic", cost: "$0.015/1K tokens" },
   { id: "llama-3-70b", name: "Llama 3 70B", provider: "Meta", cost: "$0.0008/1K tokens" },
+  { id: "gemini-pro", name: "Gemini Pro", provider: "Google", cost: "$0.0025/1K tokens" },
+  { id: "claude-3-haiku", name: "Claude 3 Haiku", provider: "Anthropic", cost: "$0.00025/1K tokens" }
 ];
 
 const templates = [
@@ -36,206 +39,198 @@ const templates = [
     name: "Content Generation",
     description: "Generate marketing content",
     template: "Create engaging {{content_type}} for {{target_audience}} about {{topic}}. The tone should be {{tone}} and the length should be {{length}}."
+  },
+  {
+    name: "Data Analysis",
+    description: "Analyze data and provide insights",
+    template: "You are a data analyst. Analyze the following data and provide key insights, trends, and recommendations:\n\n{{data}}\n\nFocus on: {{analysis_focus}}"
+  },
+  {
+    name: "Creative Writing",
+    description: "Generate creative content",
+    template: "Write a {{content_type}} in the style of {{style}}. The theme should be {{theme}} and the target audience is {{audience}}. Length: {{length}}"
   }
 ];
 
 export default function PromptIDE() {
   const [prompt, setPrompt] = useState("");
-  const [selectedModel, setSelectedModel] = useState("gpt-4o");
+  const [promptName, setPromptName] = useState("Untitled Prompt");
   const [isRunning, setIsRunning] = useState(false);
-  const [results, setResults] = useState<any[]>([]);
   const [variables, setVariables] = useState<Record<string, string>>({});
+  const [activeTab, setActiveTab] = useState<'editor' | 'testing' | 'version'>('editor');
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const handleRun = async () => {
     if (!prompt.trim()) {
       toast.error("Please enter a prompt first");
       return;
     }
-
     setIsRunning(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      const mockResult = {
-        id: Date.now(),
-        model: selectedModel,
-        prompt: prompt,
-        response: "This is a simulated response from the AI model. In a real implementation, this would be the actual response from the selected model.",
-        tokens: Math.floor(Math.random() * 500) + 100,
-        latency: Math.floor(Math.random() * 2000) + 500,
-        cost: (Math.random() * 0.05).toFixed(4)
-      };
-      setResults(prev => [mockResult, ...prev]);
-      setIsRunning(false);
-      toast.success("Prompt executed successfully!");
-    }, 2000);
+    // This will be handled by the TestingPlayground component
+    setTimeout(() => setIsRunning(false), 1000);
   };
 
   const handleSave = () => {
-    toast.success("Prompt saved to your workspace");
+    toast.success(`Prompt '${promptName}' saved to your workspace`);
   };
 
   const loadTemplate = (template: any) => {
     setPrompt(template.template);
+    setShowTemplates(false);
     toast.success(`Loaded template: ${template.name}`);
   };
 
   const extractVariables = (text: string) => {
-    const matches = text.match(/{{\s*([^}]+)\s*}}/g);
+    const matches = text.match(/{\{\s*([^}]+)\s*}\}/g);
     return matches ? matches.map(match => match.replace(/[{}\s]/g, '')) : [];
   };
 
   const promptVariables = extractVariables(prompt);
 
+  const getTabIcon = (tab: string) => {
+    switch (tab) {
+      case 'editor': return <Zap className="h-4 w-4" />;
+      case 'testing': return <TestTube className="h-4 w-4" />;
+      case 'version': return <GitBranch className="h-4 w-4" />;
+      default: return null;
+    }
+  };
+
+  const getTabLabel = (tab: string) => {
+    switch (tab) {
+      case 'editor': return 'Editor';
+      case 'testing': return 'Testing';
+      case 'version': return 'Version Control';
+      default: return '';
+    }
+  };
+
   return (
-    <div className="h-[calc(100vh-4rem)] flex">
-      {/* Left Panel - Editor */}
-      <div className="flex-1 flex flex-col border-r border-border">
-        {/* Toolbar */}
-        <div className="border-b border-border p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <h1 className="text-xl font-semibold">Prompt IDE</h1>
-              <span className="text-sm text-muted-foreground">Untitled Prompt</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm" onClick={handleSave}>
-                <Save className="h-4 w-4 mr-2" />
-                Save
-              </Button>
-              <Button 
-                onClick={handleRun} 
-                disabled={isRunning}
-                className="bg-green-600 hover:bg-green-700"
+    <div className="h-[calc(100vh-4rem)] flex flex-col">
+      {/* Main Navigation Tabs */}
+      <div className="border-b border-border">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center space-x-1">
+            {(['editor', 'testing', 'version'] as const).map((tab) => (
+              <Button
+                key={tab}
+                variant={activeTab === tab ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab(tab)}
+                className="flex items-center space-x-2"
               >
-                {isRunning ? (
-                  <>
-                    <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full" />
-                    Running...
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4 mr-2" />
-                    Run
-                  </>
-                )}
+                {getTabIcon(tab)}
+                <span>{getTabLabel(tab)}</span>
               </Button>
-            </div>
+            ))}
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowTemplates(!showTemplates)}
+            >
+              <Layers className="h-4 w-4 mr-2" />
+              Templates
+            </Button>
+            <Button variant="outline" size="sm">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </Button>
           </div>
         </div>
-
-        {/* Editor */}
-        <div className="flex-1 p-4">
-          <div className="h-full">
-            <label className="block text-sm font-medium mb-2">Prompt</label>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Enter your prompt here... Use {{variable}} syntax for dynamic content."
-              className="w-full h-[calc(100%-2rem)] p-4 border border-border rounded-lg font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
-        </div>
-
-        {/* Variables Panel */}
-        {promptVariables.length > 0 && (
-          <div className="border-t border-border p-4">
-            <h3 className="text-sm font-medium mb-3">Variables</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {promptVariables.map((variable) => (
-                <div key={variable}>
-                  <label className="block text-xs font-medium mb-1">{variable}</label>
-                  <input
-                    type="text"
-                    value={variables[variable] || ""}
-                    onChange={(e) => setVariables(prev => ({ ...prev, [variable]: e.target.value }))}
-                    placeholder={`Enter ${variable}`}
-                    className="w-full px-2 py-1 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Right Panel - Configuration & Results */}
-      <div className="w-96 flex flex-col">
-        {/* Model Selection */}
-        <div className="border-b border-border p-4">
-          <h3 className="text-sm font-medium mb-3">Model Configuration</h3>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium mb-1">Model</label>
-              <select
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="w-full p-2 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                {models.map((model) => (
-                  <option key={model.id} value={model.id}>
-                    {model.name} ({model.provider})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Cost: {models.find(m => m.id === selectedModel)?.cost}
-            </div>
-          </div>
-        </div>
-
-        {/* Templates */}
-        <div className="border-b border-border p-4">
+      {/* Templates Panel */}
+      {showTemplates && (
+        <div className="border-b border-border p-4 bg-muted/30">
           <h3 className="text-sm font-medium mb-3">Quick Templates</h3>
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             {templates.map((template, index) => (
               <button
                 key={index}
                 onClick={() => loadTemplate(template)}
-                className="w-full text-left p-2 text-sm border border-border rounded hover:bg-muted transition-colors"
+                className="text-left p-3 border border-border rounded-lg hover:bg-background transition-colors"
               >
-                <div className="font-medium">{template.name}</div>
-                <div className="text-xs text-muted-foreground">{template.description}</div>
+                <div className="font-medium text-sm">{template.name}</div>
+                <div className="text-xs text-muted-foreground mt-1">{template.description}</div>
               </button>
             ))}
           </div>
         </div>
+      )}
 
-        {/* Results */}
-        <div className="flex-1 p-4">
-          <h3 className="text-sm font-medium mb-3">Results</h3>
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {results.length === 0 ? (
-              <div className="text-center text-muted-foreground text-sm py-8">
-                Run a prompt to see results here
+      {/* Variables Panel */}
+      {promptVariables.length > 0 && (
+        <div className="border-b border-border p-4 bg-muted/30">
+          <h3 className="text-sm font-medium mb-3">Variables</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {promptVariables.map((variable) => (
+              <div key={variable}>
+                <label className="block text-xs font-medium mb-1">{variable}</label>
+                <input
+                  type="text"
+                  value={variables[variable] || ""}
+                  onChange={(e) => setVariables(prev => ({ ...prev, [variable]: e.target.value }))}
+                  placeholder={`Enter ${variable}`}
+                  className="w-full px-2 py-1 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                />
               </div>
-            ) : (
-              results.map((result) => (
-                <Card key={result.id} className="text-sm">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm">{result.model}</CardTitle>
-                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {result.latency}ms
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="bg-muted p-2 rounded text-xs mb-2">
-                      {result.response}
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{result.tokens} tokens</span>
-                      <span>${result.cost}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
+            ))}
           </div>
         </div>
+      )}
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex">
+        {activeTab === 'editor' && (
+          <>
+            <PromptEditor
+              value={prompt}
+              onChange={setPrompt}
+              onRun={handleRun}
+              onSave={handleSave}
+              isRunning={isRunning}
+              promptName={promptName}
+              onPromptNameChange={setPromptName}
+            />
+            <TestingPlayground
+              prompt={prompt}
+              variables={variables}
+              models={models}
+            />
+          </>
+        )}
+        
+        {activeTab === 'testing' && (
+          <div className="flex-1">
+            <TestingPlayground
+              prompt={prompt}
+              variables={variables}
+              models={models}
+            />
+          </div>
+        )}
+        
+        {activeTab === 'version' && (
+          <div className="flex-1">
+            <PromptEditor
+              value={prompt}
+              onChange={setPrompt}
+              onRun={handleRun}
+              onSave={handleSave}
+              isRunning={isRunning}
+              promptName={promptName}
+              onPromptNameChange={setPromptName}
+            />
+            <VersionControl
+              prompt={prompt}
+              onPromptChange={setPrompt}
+              promptName={promptName}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
