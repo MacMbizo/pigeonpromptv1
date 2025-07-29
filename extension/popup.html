@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Prompt Engineering Platform</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <img src="icons/icon32.png" alt="Logo" class="logo">
+      <h1>AI Prompt Platform</h1>
+    </header>
+    
+    <div class="popup-content">
+      <!-- Quick Actions -->
+      <section class="quick-actions">
+        <h2>Quick Actions</h2>
+        <button id="extract-content" class="action-btn primary">
+          <span class="icon">📄</span>
+          Extract Page Content
+        </button>
+        <button id="analyze-selection" class="action-btn">
+          <span class="icon">🔍</span>
+          Analyze Selection
+        </button>
+        <button id="open-platform" class="action-btn">
+          <span class="icon">🚀</span>
+          Open Platform
+        </button>
+      </section>
+
+      <!-- Recent Prompts -->
+      <section class="recent-prompts">
+        <h2>Recent Prompts</h2>
+        <div id="recent-prompts-list" class="prompts-list">
+          <div class="prompt-item">
+            <span class="prompt-title">Code Review Assistant</span>
+            <button class="use-prompt-btn">Use</button>
+          </div>
+          <div class="prompt-item">
+            <span class="prompt-title">Content Summarizer</span>
+            <button class="use-prompt-btn">Use</button>
+          </div>
+          <div class="prompt-item">
+            <span class="prompt-title">Bug Analyzer</span>
+            <button class="use-prompt-btn">Use</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Context Info -->
+      <section class="context-info">
+        <h2>Page Context</h2>
+        <div class="context-details">
+          <div class="context-item">
+            <span class="label">URL:</span>
+            <span id="current-url" class="value">Loading...</span>
+          </div>
+          <div class="context-item">
+            <span class="label">Title:</span>
+            <span id="page-title" class="value">Loading...</span>
+          </div>
+          <div class="context-item">
+            <span class="label">Selection:</span>
+            <span id="selection-info" class="value">None</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Settings -->
+      <section class="settings">
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="auto-extract" checked>
+            Auto-extract content
+          </label>
+        </div>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="context-suggestions" checked>
+            Context-aware suggestions
+          </label>
+        </div>
+      </section>
+    </div>
+
+    <footer class="popup-footer">
+      <button id="settings-btn" class="footer-btn">Settings</button>
+      <button id="help-btn" class="footer-btn">Help</button>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

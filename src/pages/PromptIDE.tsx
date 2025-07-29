@@ -19,7 +19,10 @@ import {
   Coins,
   GitCompare,
   PanelLeftOpen,
-  PanelLeftClose
+  PanelLeftClose,
+  Network,
+  Code,
+  Eye
 } from "lucide-react";
 import { toast } from "sonner";
 import PromptEditor from "@/components/PromptEditor";
@@ -32,6 +35,10 @@ import TokenManager from "@/components/TokenManager";
 import LiveDiffViewer from "@/components/LiveDiffViewer";
 import { LLMProvider } from "@/components/LLMProvider";
 import { TokenProvider } from "@/components/TokenManager";
+import CodeParser from "@/components/CodeParser";
+import DiagramGenerator, { type FileNode, type CodeElement, type Dependency } from "@/components/DiagramGenerator";
+import DiffViewer from "@/components/DiffViewer";
+import CodeApplicator, { type CodeChange } from "@/components/CodeApplicator";
 
 const models = [
   { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", cost: "$0.005/1K tokens" },
@@ -74,11 +81,11 @@ export default function PromptIDE() {
   const [promptName, setPromptName] = useState("Untitled Prompt");
   const [isRunning, setIsRunning] = useState(false);
   const [variables, setVariables] = useState<Record<string, string>>({});
-  const [activeTab, setActiveTab] = useState<'editor' | 'testing' | 'version' | 'files' | 'diff'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'testing' | 'version' | 'files' | 'diff' | 'diagram' | 'parser' | 'applicator'>('editor');
   const [showTemplates, setShowTemplates] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
-  const [activeSidebarTab, setActiveSidebarTab] = useState<'files' | 'git' | 'tokens'>('files');
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'files' | 'git' | 'tokens' | 'analysis'>('files');
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [projectPath, setProjectPath] = useState<string>('');
   const [originalContent, setOriginalContent] = useState('');
@@ -91,6 +98,11 @@ export default function PromptIDE() {
     lineNumbers: true,
     wordWrap: true
   });
+  const [parsedFiles, setParsedFiles] = useState<any[]>([]);
+  const [fileNodes, setFileNodes] = useState<FileNode[]>([]);
+  const [codeElements, setCodeElements] = useState<CodeElement[]>([]);
+  const [dependencies, setDependencies] = useState<Dependency[]>([]);
+  const [codeChanges, setCodeChanges] = useState<CodeChange[]>([]);
 
   const handleRun = async () => {
     if (!prompt.trim()) {
@@ -153,6 +165,9 @@ export default function PromptIDE() {
       case 'version': return <GitBranch className="h-4 w-4" />;
       case 'files': return <FileText className="h-4 w-4" />;
       case 'diff': return <GitCompare className="h-4 w-4" />;
+      case 'diagram': return <Network className="h-4 w-4" />;
+      case 'parser': return <Code className="h-4 w-4" />;
+      case 'applicator': return <Eye className="h-4 w-4" />;
       default: return null;
     }
   };
@@ -164,6 +179,9 @@ export default function PromptIDE() {
       case 'version': return 'Version Control';
       case 'files': return 'Files';
       case 'diff': return 'Diff';
+      case 'diagram': return 'Diagram';
+      case 'parser': return 'Parser';
+      case 'applicator': return 'Applicator';
       default: return '';
     }
   };
@@ -184,7 +202,7 @@ export default function PromptIDE() {
               {showSidebar ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
             </Button>
             <div className="flex items-center space-x-1">
-              {(['editor', 'testing', 'version', 'files', 'diff'] as const).map((tab) => (
+              {(['editor', 'testing', 'version', 'files', 'diff', 'diagram', 'parser', 'applicator'] as const).map((tab) => (
                 <Button
                   key={tab}
                   variant={activeTab === tab ? 'default' : 'ghost'}
@@ -392,6 +410,15 @@ export default function PromptIDE() {
                 <Coins className="w-4 h-4 mr-2" />
                 Tokens
               </Button>
+              <Button
+                variant={activeSidebarTab === 'analysis' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveSidebarTab('analysis')}
+                className="flex-1 rounded-none"
+              >
+                <Code className="w-4 h-4 mr-2" />
+                Analysis
+              </Button>
             </div>
             
             {/* Sidebar Content */}
@@ -407,6 +434,22 @@ export default function PromptIDE() {
               )}
               {activeSidebarTab === 'tokens' && (
                 <TokenManager />
+              )}
+              {activeSidebarTab === 'analysis' && (
+                <div className="p-4">
+                  <h3 className="text-sm font-medium mb-3">Code Analysis</h3>
+                  <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground">
+                      Parsed Files: {parsedFiles.length}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Code Elements: {codeElements.length}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Dependencies: {dependencies.length}
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -479,6 +522,61 @@ export default function PromptIDE() {
                modifiedContent={modifiedContent}
                fileName="comparison.txt"
                language="text"
+             />
+           )}
+          
+          {activeTab === 'diagram' && (
+             <DiagramGenerator
+               fileTree={fileNodes}
+               codeElements={codeElements}
+               dependencies={dependencies}
+             />
+           )}
+          
+          {activeTab === 'parser' && (
+              <CodeParser
+                fileContent={selectedFile?.content || prompt}
+                fileName={selectedFile?.name || 'prompt.txt'}
+                language={selectedFile?.language || 'text'}
+                onAnalysisComplete={(files) => {
+                  setParsedFiles(files);
+                  // Extract data for diagram
+                  const nodes: FileNode[] = files.map(f => ({
+                    path: f.path,
+                    type: f.type === 'file' ? 'file' : 'directory',
+                    size: f.content?.length || 0
+                  }));
+                  setFileNodes(nodes);
+                  
+                  const elements: CodeElement[] = files.flatMap(f => 
+                    f.functions?.map((fn: any) => ({
+                      name: fn.name,
+                      type: 'function' as const,
+                      line: fn.line || 0
+                    })) || []
+                  );
+                  setCodeElements(elements);
+                  
+                  const deps: Dependency[] = files.flatMap(f => 
+                    f.imports?.map((imp: any) => ({
+                      name: imp,
+                      type: 'dependency' as const,
+                      source: f.path
+                    })) || []
+                  );
+                  setDependencies(deps);
+                }}
+              />
+            )}
+          
+          {activeTab === 'applicator' && (
+             <CodeApplicator
+               changes={codeChanges}
+               onApplyAll={async (changes) => {
+                 toast.success(`Applied ${changes.length} code changes`);
+                 setCodeChanges([]);
+                 return true;
+               }}
              />
            )}
         </div>

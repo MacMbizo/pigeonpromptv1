@@ -27,7 +27,33 @@ import {
   X
 } from 'lucide-react';
 
-// Types for File System Access API
+// File System Access API types
+interface FileSystemHandle {
+  kind: 'file' | 'directory';
+  name: string;
+}
+
+interface FileSystemFileHandle extends FileSystemHandle {
+  kind: 'file';
+  getFile(): Promise<File>;
+}
+
+interface FileSystemDirectoryHandle extends FileSystemHandle {
+  kind: 'directory';
+  entries(): AsyncIterableIterator<[string, FileSystemHandle]>;
+  getDirectoryHandle(name: string): Promise<FileSystemDirectoryHandle>;
+  getFileHandle(name: string): Promise<FileSystemFileHandle>;
+}
+
+declare global {
+  interface Window {
+    showDirectoryPicker(options?: {
+      mode?: 'read' | 'readwrite';
+      startIn?: 'desktop' | 'documents' | 'downloads' | 'music' | 'pictures' | 'videos';
+    }): Promise<FileSystemDirectoryHandle>;
+  }
+}
+
 interface ProjectConnection {
   id: string;
   name: string;
