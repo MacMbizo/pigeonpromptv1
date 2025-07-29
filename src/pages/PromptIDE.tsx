@@ -13,12 +13,25 @@ import {
   BarChart3,
   Zap,
   Target,
-  History
+  History,
+  FolderOpen,
+  FileText,
+  Coins,
+  GitCompare,
+  PanelLeftOpen,
+  PanelLeftClose
 } from "lucide-react";
 import { toast } from "sonner";
 import PromptEditor from "@/components/PromptEditor";
 import TestingPlayground from "@/components/TestingPlayground";
 import VersionControl from "@/components/VersionControl";
+import FileSystemManager from "@/components/FileSystemManager";
+import FilePreview from "@/components/FilePreview";
+import GitIntegration from "@/components/GitIntegration";
+import TokenManager from "@/components/TokenManager";
+import LiveDiffViewer from "@/components/LiveDiffViewer";
+import { LLMProvider } from "@/components/LLMProvider";
+import { TokenProvider } from "@/components/TokenManager";
 
 const models = [
   { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", cost: "$0.005/1K tokens" },
@@ -61,9 +74,15 @@ export default function PromptIDE() {
   const [promptName, setPromptName] = useState("Untitled Prompt");
   const [isRunning, setIsRunning] = useState(false);
   const [variables, setVariables] = useState<Record<string, string>>({});
-  const [activeTab, setActiveTab] = useState<'editor' | 'testing' | 'version'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'testing' | 'version' | 'files' | 'diff'>('editor');
   const [showTemplates, setShowTemplates] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'files' | 'git' | 'tokens'>('files');
+  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [projectPath, setProjectPath] = useState<string>('');
+  const [originalContent, setOriginalContent] = useState('');
+  const [modifiedContent, setModifiedContent] = useState('');
   const [editorSettings, setEditorSettings] = useState({
     fontSize: '14',
     theme: 'light',
@@ -132,6 +151,8 @@ export default function PromptIDE() {
       case 'editor': return <Zap className="h-4 w-4" />;
       case 'testing': return <TestTube className="h-4 w-4" />;
       case 'version': return <GitBranch className="h-4 w-4" />;
+      case 'files': return <FileText className="h-4 w-4" />;
+      case 'diff': return <GitCompare className="h-4 w-4" />;
       default: return null;
     }
   };
@@ -141,28 +162,41 @@ export default function PromptIDE() {
       case 'editor': return 'Editor';
       case 'testing': return 'Testing';
       case 'version': return 'Version Control';
+      case 'files': return 'Files';
+      case 'diff': return 'Diff';
       default: return '';
     }
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
-      {/* Main Navigation Tabs */}
-      <div className="border-b border-border">
+    <LLMProvider>
+      <TokenProvider>
+        <div className="h-[calc(100vh-4rem)] flex flex-col">
+          {/* Main Navigation Tabs */}
+          <div className="border-b border-border">
         <div className="flex items-center justify-between p-4">
-          <div className="flex items-center space-x-1">
-            {(['editor', 'testing', 'version'] as const).map((tab) => (
-              <Button
-                key={tab}
-                variant={activeTab === tab ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setActiveTab(tab)}
-                className="flex items-center space-x-2"
-              >
-                {getTabIcon(tab)}
-                <span>{getTabLabel(tab)}</span>
-              </Button>
-            ))}
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSidebar(!showSidebar)}
+            >
+              {showSidebar ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
+            </Button>
+            <div className="flex items-center space-x-1">
+              {(['editor', 'testing', 'version', 'files', 'diff'] as const).map((tab) => (
+                <Button
+                  key={tab}
+                  variant={activeTab === tab ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveTab(tab)}
+                  className="flex items-center space-x-2"
+                >
+                  {getTabIcon(tab)}
+                  <span>{getTabLabel(tab)}</span>
+                </Button>
+              ))}
+            </div>
           </div>
           
           <div className="flex items-center space-x-2">
@@ -326,54 +360,131 @@ export default function PromptIDE() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex">
-        {activeTab === 'editor' && (
-          <>
-            <PromptEditor
-              value={prompt}
-              onChange={setPrompt}
-              onRun={handleRun}
-              onSave={handleSave}
-              isRunning={isRunning}
-              promptName={promptName}
-              onPromptNameChange={setPromptName}
-            />
-            <TestingPlayground
-              prompt={prompt}
-              variables={variables}
-              models={models}
-            />
-          </>
-        )}
-        
-        {activeTab === 'testing' && (
-          <div className="flex-1">
-            <TestingPlayground
-              prompt={prompt}
-              variables={variables}
-              models={models}
-            />
+        {/* Sidebar */}
+        {showSidebar && (
+          <div className="w-80 border-r border-border flex flex-col">
+            {/* Sidebar Tabs */}
+            <div className="flex border-b border-border">
+              <Button
+                variant={activeSidebarTab === 'files' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveSidebarTab('files')}
+                className="flex-1 rounded-none"
+              >
+                <FolderOpen className="w-4 h-4 mr-2" />
+                Files
+              </Button>
+              <Button
+                variant={activeSidebarTab === 'git' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveSidebarTab('git')}
+                className="flex-1 rounded-none"
+              >
+                <GitBranch className="w-4 h-4 mr-2" />
+                Git
+              </Button>
+              <Button
+                variant={activeSidebarTab === 'tokens' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveSidebarTab('tokens')}
+                className="flex-1 rounded-none"
+              >
+                <Coins className="w-4 h-4 mr-2" />
+                Tokens
+              </Button>
+            </div>
+            
+            {/* Sidebar Content */}
+            <div className="flex-1 overflow-hidden">
+              {activeSidebarTab === 'files' && (
+                   <FileSystemManager
+                     onFilesSelected={(files) => setSelectedFile(files[0])}
+                     onProjectConnected={(project) => setProjectPath(project.name)}
+                   />
+                 )}
+              {activeSidebarTab === 'git' && (
+                <GitIntegration projectPath={projectPath} />
+              )}
+              {activeSidebarTab === 'tokens' && (
+                <TokenManager />
+              )}
+            </div>
           </div>
         )}
         
-        {activeTab === 'version' && (
-          <div className="flex-1">
-            <PromptEditor
-              value={prompt}
-              onChange={setPrompt}
-              onRun={handleRun}
-              onSave={handleSave}
-              isRunning={isRunning}
-              promptName={promptName}
-              onPromptNameChange={setPromptName}
-            />
-            <VersionControl
-              prompt={prompt}
-              onPromptChange={setPrompt}
-              promptName={promptName}
-            />
-          </div>
-        )}
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col">
+          {activeTab === 'editor' && (
+            <>
+              <PromptEditor
+                value={prompt}
+                onChange={setPrompt}
+                onRun={handleRun}
+                onSave={handleSave}
+                isRunning={isRunning}
+                promptName={promptName}
+                onPromptNameChange={setPromptName}
+              />
+              <TestingPlayground
+                prompt={prompt}
+                variables={variables}
+                models={models}
+              />
+            </>
+          )}
+          
+          {activeTab === 'testing' && (
+            <div className="flex-1">
+              <TestingPlayground
+                prompt={prompt}
+                variables={variables}
+                models={models}
+              />
+            </div>
+          )}
+          
+          {activeTab === 'version' && (
+            <div className="flex-1">
+              <PromptEditor
+                value={prompt}
+                onChange={setPrompt}
+                onRun={handleRun}
+                onSave={handleSave}
+                isRunning={isRunning}
+                promptName={promptName}
+                onPromptNameChange={setPromptName}
+              />
+              <VersionControl
+                prompt={prompt}
+                onPromptChange={setPrompt}
+                promptName={promptName}
+              />
+            </div>
+          )}
+          
+          {activeTab === 'files' && selectedFile && (
+             <FilePreview
+               file={selectedFile}
+               onSnippetSelected={(snippet) => {
+                 setPrompt(prev => prev + '\n\n' + snippet);
+                 setActiveTab('editor');
+                 toast.success('Code snippet added to prompt');
+               }}
+             />
+           )}
+          
+          {activeTab === 'diff' && (
+             <LiveDiffViewer
+               originalContent={originalContent}
+               modifiedContent={modifiedContent}
+               fileName="comparison.txt"
+               language="text"
+             />
+           )}
+        </div>
       </div>
-    </div>
+        </div>
+      </TokenProvider>
+    </LLMProvider>
   );
 }
