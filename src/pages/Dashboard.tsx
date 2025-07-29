@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '../hooks/useAuth';
+import { usePrompts } from '../hooks/usePrompts';
+import { useWorkflows } from '../hooks/useWorkflows';
+import { useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   Users,
@@ -34,60 +38,9 @@ import {
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
-const stats = [
-  {
-    title: "Total Prompts",
-    value: "24",
-    change: "+12%",
-    icon: Code2,
-    color: "text-blue-600"
-  },
-  {
-    title: "Active Flows",
-    value: "8",
-    change: "+4%",
-    icon: Workflow,
-    color: "text-green-600"
-  },
-  {
-    title: "API Calls Today",
-    value: "1,247",
-    change: "+23%",
-    icon: Activity,
-    color: "text-purple-600"
-  },
-  {
-    title: "Cost This Month",
-    value: "$42.50",
-    change: "-8%",
-    icon: DollarSign,
-    color: "text-orange-600"
-  }
-];
+// This will be calculated dynamically based on real data
 
-const recentPrompts = [
-  {
-    id: 1,
-    name: "Customer Support Assistant",
-    description: "AI assistant for handling customer inquiries",
-    lastModified: "2 hours ago",
-    status: "deployed"
-  },
-  {
-    id: 2,
-    name: "Code Review Helper",
-    description: "Automated code review and suggestions",
-    lastModified: "1 day ago",
-    status: "testing"
-  },
-  {
-    id: 3,
-    name: "Content Generator",
-    description: "Generate marketing content variations",
-    lastModified: "3 days ago",
-    status: "draft"
-  }
-];
+// Recent prompts will be calculated from real data
 
 const quickActions = [
   {
@@ -140,31 +93,49 @@ export default function Dashboard() {
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [projectType, setProjectType] = useState('prompt');
+  
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { prompts, loading: promptsLoading, createPrompt } = usePrompts();
+  const { workflows, loading: workflowsLoading, createWorkflow } = useWorkflows();
+  const navigate = useNavigate();
 
-  const handleCreateProject = () => {
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login');
+    }
+  }, [user, authLoading, navigate]);
+
+  const handleCreateProject = async () => {
     if (!projectName.trim()) {
       toast.error('Please enter a project name');
       return;
     }
     
-    // Save to localStorage (mock backend)
-    const projects = JSON.parse(localStorage.getItem('promptops_projects') || '[]');
-    const newProject = {
-      id: Date.now(),
-      name: projectName,
-      description: projectDescription,
-      type: projectType,
-      createdAt: new Date().toISOString(),
-      status: 'draft'
-    };
-    projects.push(newProject);
-    localStorage.setItem('promptops_projects', JSON.stringify(projects));
+    if (projectType === 'prompt') {
+      await createPrompt({
+        title: projectName,
+        content: '',
+        is_public: false,
+        tags: []
+      });
+    } else if (projectType === 'workflow') {
+      await createWorkflow({
+        name: projectName,
+        description: projectDescription,
+        config: {}
+      });
+    }
     
-    toast.success(`Project "${projectName}" created successfully!`);
     setShowNewProject(false);
     setProjectName('');
     setProjectDescription('');
     setProjectType('prompt');
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
   };
 
   const handleSaveSettings = () => {
@@ -172,17 +143,80 @@ export default function Dashboard() {
     setShowSettings(false);
   };
 
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Welcome back! Here's what's happening with your prompts and workflows.
-          </p>
+  // Calculate dynamic stats
+  const stats = [
+    {
+      title: "Total Prompts",
+      value: prompts.length.toString(),
+      change: "+12%",
+      icon: Code2,
+      color: "text-blue-600"
+    },
+    {
+      title: "Active Workflows",
+      value: workflows.length.toString(),
+      change: "+4%",
+      icon: Workflow,
+      color: "text-green-600"
+    },
+    {
+      title: "API Calls Today",
+      value: "1,247",
+      change: "+23%",
+      icon: Activity,
+      color: "text-purple-600"
+    },
+    {
+      title: "Cost This Month",
+      value: "$42.50",
+      change: "-8%",
+      icon: DollarSign,
+      color: "text-orange-600"
+    }
+  ];
+
+  // Show loading state
+  if (authLoading || promptsLoading || workflowsLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading dashboard...</p>
+          </div>
         </div>
-        <div className="flex items-center space-x-3">
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated
+   if (!user) {
+     return null;
+   }
+
+   // Get recent prompts (last 3)
+   const recentPrompts = prompts.slice(0, 3).map(prompt => ({
+     id: prompt.id,
+     name: prompt.title,
+     description: prompt.content.substring(0, 100) + (prompt.content.length > 100 ? '...' : ''),
+     lastModified: new Date(prompt.updated_at).toLocaleDateString(),
+     status: prompt.is_public ? 'public' : 'private'
+   }));
+
+   return (
+     <div className="p-6 space-y-6">
+       {/* Header */}
+       <div className="flex items-center justify-between">
+         <div>
+           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+           <p className="text-muted-foreground mt-1">
+             Welcome back, {user.user_metadata?.name || user.email}! Here's what's happening with your prompts and workflows.
+           </p>
+         </div>
+         <div className="flex items-center space-x-3">
+           <Button variant="outline" onClick={handleSignOut}>
+             Sign Out
+           </Button>
           <Dialog open={showSettings} onOpenChange={setShowSettings}>
             <DialogTrigger asChild>
               <Button variant="outline">
