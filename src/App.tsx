@@ -3,7 +3,7 @@ import { Toaster } from "sonner";
 import Layout from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
 import PromptIDE from "@/pages/PromptIDE";
-import CommunityHub from "@/pages/CommunityHub";
+import PromptHub from "@/pages/PromptHub";
 import PromptFlow from "@/pages/PromptFlow";
 import Settings from "@/pages/Settings";
 import AdvancedAnalytics from "@/components/AdvancedAnalytics";
@@ -23,7 +23,7 @@ export default function App() {
           <Route path="/" element={<Layout />}>
               <Route index element={<Dashboard />} />
               <Route path="ide" element={<PromptIDE />} />
-              <Route path="hub" element={<CommunityHub />} />
+              <Route path="hub" element={<PromptHub />} />
               <Route path="flow" element={<PromptFlow />} />
               <Route path="analytics" element={<AdvancedAnalytics />} />
               <Route path="api" element={<APIManagement />} />

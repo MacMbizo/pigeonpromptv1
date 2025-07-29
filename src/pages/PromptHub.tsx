@@ -33,13 +33,18 @@ import {
   CheckCircle,
   AlertCircle,
   Info,
-  Bell
+  Bell,
+  FileDown,
+  FileUp,
+  FolderPlus
 } from "lucide-react";
 import { toast } from "sonner";
 import CollaborationPanel from "../components/CollaborationPanel";
 import CommunityFeatures from "../components/CommunityFeatures";
 import MarketplaceFeatures from "../components/MarketplaceFeatures";
 import TeamCollaboration from "../components/TeamCollaboration";
+import { exportPrompts, importPrompts, ExportablePrompt } from "../utils/importExport";
+import { usePrompts } from "../hooks/usePrompts";
 
 const workspaces = [
   { id: "personal", name: "Personal", type: "private", icon: Lock },
@@ -158,6 +163,12 @@ export default function PromptHub() {
   const [showSharePrompt, setShowSharePrompt] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedPromptToShare, setSelectedPromptToShare] = useState<any>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [selectedExportFormat, setSelectedExportFormat] = useState<'json' | 'csv' | 'txt'>('json');
+  const [selectedFolderForImport, setSelectedFolderForImport] = useState<string>('');
+  const { prompts: userPrompts } = usePrompts();
   const [newPromptData, setNewPromptData] = useState({
     name: '',
     description: '',
@@ -284,6 +295,68 @@ export default function PromptHub() {
     const body = `I found this great prompt on PigeonPrompt: ${selectedPromptToShare?.description}\n\nView it here: https://pigeonprompt.com/prompts/${selectedPromptToShare?.id}`;
     window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
     setShowSharePrompt(false);
+  };
+
+  const handleExportPrompts = () => {
+    const promptsToExport: ExportablePrompt[] = filteredPrompts.map(prompt => ({
+      id: prompt.id.toString(),
+      title: prompt.name,
+      content: prompt.description, // Using description as content for demo
+      description: prompt.description,
+      tags: prompt.tags,
+      category: prompt.folder,
+      author: prompt.author,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      is_public: prompt.isPublic
+    }));
+
+    if (promptsToExport.length === 0) {
+      toast.error('No prompts to export');
+      return;
+    }
+
+    exportPrompts(promptsToExport, selectedExportFormat);
+    setShowExportDialog(false);
+  };
+
+  const handleImportPrompts = async () => {
+    if (!importFile) {
+      toast.error('Please select a file to import');
+      return;
+    }
+
+    const result = await importPrompts(importFile, selectedFolderForImport);
+    
+    if (result.success) {
+      toast.success(`Successfully imported ${result.imported} prompts to PromptHub`);
+      // Stay on PromptHub page and refresh the view
+      setSelectedTab('my-prompts');
+      setSelectedWorkspace('personal');
+    }
+    
+    if (result.errors.length > 0) {
+      console.warn('Import errors:', result.errors);
+    }
+
+    setShowImportDialog(false);
+    setImportFile(null);
+    setSelectedFolderForImport('');
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const allowedTypes = ['.json', '.csv', '.txt'];
+      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      
+      if (allowedTypes.includes(fileExtension)) {
+        setImportFile(file);
+      } else {
+        toast.error('Please select a JSON, CSV, or TXT file');
+        event.target.value = '';
+      }
+    }
   };
   
   // Mock notifications for hub
@@ -512,6 +585,134 @@ export default function PromptHub() {
                     </Button>
                     <Button onClick={handleApplyFilters}>
                       Apply Filters
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              
+              {/* Import Dialog */}
+              <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <FileUp className="h-4 w-4 mr-2" />
+                    Import
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle>Import Prompts</DialogTitle>
+                    <DialogDescription>
+                      Import prompts from JSON, CSV, or TXT files. The system will automatically format them for compatibility.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="importFile" className="text-right">
+                        File
+                      </Label>
+                      <div className="col-span-3">
+                        <Input
+                          id="importFile"
+                          type="file"
+                          accept=".json,.csv,.txt"
+                          onChange={handleFileSelect}
+                          className="cursor-pointer"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Supported formats: JSON, CSV, TXT
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="targetFolder" className="text-right">
+                        Target Folder
+                      </Label>
+                      <select 
+                        id="targetFolder" 
+                        value={selectedFolderForImport}
+                        onChange={(e) => setSelectedFolderForImport(e.target.value)}
+                        className="col-span-3 p-2 border border-border rounded"
+                      >
+                        <option value="">Default Folder</option>
+                        {folders.map((folder) => (
+                          <option key={folder.id} value={folder.name}>
+                            {folder.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {importFile && (
+                      <div className="col-span-4 p-3 bg-muted rounded-lg">
+                        <p className="text-sm font-medium">Selected File:</p>
+                        <p className="text-sm text-muted-foreground">{importFile.name}</p>
+                        <p className="text-xs text-muted-foreground">Size: {(importFile.size / 1024).toFixed(2)} KB</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => {
+                      setShowImportDialog(false);
+                      setImportFile(null);
+                      setSelectedFolderForImport('');
+                    }}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleImportPrompts} disabled={!importFile}>
+                      Import Prompts
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              
+              {/* Export Dialog */}
+              <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle>Export Prompts</DialogTitle>
+                    <DialogDescription>
+                      Export your prompts in different formats. Choose the format that best suits your needs.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="exportFormat" className="text-right">
+                        Format
+                      </Label>
+                      <select 
+                        id="exportFormat" 
+                        value={selectedExportFormat}
+                        onChange={(e) => setSelectedExportFormat(e.target.value as 'json' | 'csv' | 'txt')}
+                        className="col-span-3 p-2 border border-border rounded"
+                      >
+                        <option value="json">JSON - Structured data format</option>
+                        <option value="csv">CSV - Spreadsheet compatible</option>
+                        <option value="txt">TXT - Plain text format</option>
+                      </select>
+                    </div>
+                    <div className="col-span-4 p-3 bg-muted rounded-lg">
+                      <p className="text-sm font-medium mb-2">Export Summary:</p>
+                      <p className="text-sm text-muted-foreground">
+                        {filteredPrompts.length} prompts will be exported
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {selectedExportFormat === 'json' && 'JSON format preserves all metadata and is ideal for re-importing.'}
+                        {selectedExportFormat === 'csv' && 'CSV format is compatible with spreadsheet applications like Excel.'}
+                        {selectedExportFormat === 'txt' && 'TXT format provides a human-readable plain text export.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setShowExportDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleExportPrompts} disabled={filteredPrompts.length === 0}>
+                      Export {filteredPrompts.length} Prompts
                     </Button>
                   </div>
                 </DialogContent>
