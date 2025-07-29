@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,20 +27,43 @@ import {
   Download,
   Upload,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  CreditCard
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Settings() {
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
+  
   const [profile, setProfile] = useState({
-    name: 'John Doe',
-    email: 'john.doe@company.com',
-    bio: 'Senior AI Engineer passionate about prompt engineering and automation.',
-    company: 'TechCorp Inc.',
-    website: 'https://johndoe.dev',
-    location: 'San Francisco, CA',
+    name: user?.user_metadata?.name || user?.email?.split('@')[0] || 'User',
+    email: user?.email || '',
+    bio: 'AI Engineer passionate about prompt engineering and automation.',
+    company: '',
+    website: '',
+    location: '',
     timezone: 'America/Los_Angeles'
   });
+  
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+  
+  useEffect(() => {
+    if (user) {
+      setProfile(prev => ({
+        ...prev,
+        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+        email: user.email || ''
+      }));
+    }
+  }, [user]);
 
   const [security, setSecurity] = useState({
     twoFactorEnabled: true,
@@ -155,8 +179,8 @@ export default function Settings() {
         </div>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="profile" className="flex items-center space-x-2">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">Profile</span>
@@ -164,6 +188,10 @@ export default function Settings() {
           <TabsTrigger value="security" className="flex items-center space-x-2">
             <Shield className="h-4 w-4" />
             <span className="hidden sm:inline">Security</span>
+          </TabsTrigger>
+          <TabsTrigger value="billing" className="flex items-center space-x-2">
+            <CreditCard className="h-4 w-4" />
+            <span className="hidden sm:inline">Billing</span>
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center space-x-2">
             <Bell className="h-4 w-4" />
@@ -369,6 +397,107 @@ export default function Settings() {
                 <Save className="h-4 w-4 mr-2" />
                 Save Security Settings
               </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="billing" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Billing & Subscription</CardTitle>
+              <CardDescription>
+                Manage your subscription, billing information, and usage
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <h3 className="font-medium">Current Plan</h3>
+                    <p className="text-sm text-muted-foreground">Free Plan</p>
+                    <p className="text-xs text-muted-foreground mt-1">Limited features and usage</p>
+                  </div>
+                  <Button>
+                    Upgrade Plan
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-center">
+                        <h4 className="font-medium">API Calls</h4>
+                        <p className="text-2xl font-bold text-primary">1,247</p>
+                        <p className="text-xs text-muted-foreground">of 10,000 this month</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-center">
+                        <h4 className="font-medium">Storage</h4>
+                        <p className="text-2xl font-bold text-primary">2.3 GB</p>
+                        <p className="text-xs text-muted-foreground">of 5 GB used</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-center">
+                        <h4 className="font-medium">Team Members</h4>
+                        <p className="text-2xl font-bold text-primary">1</p>
+                        <p className="text-xs text-muted-foreground">of 3 available</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="font-medium">Billing Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="billingEmail">Billing Email</Label>
+                      <Input
+                        id="billingEmail"
+                        type="email"
+                        value={profile.email}
+                        readOnly
+                        className="bg-muted"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="company">Company (Optional)</Label>
+                      <Input
+                        id="company"
+                        value={profile.company}
+                        onChange={(e) => setProfile({ ...profile, company: e.target.value })}
+                        placeholder="Your company name"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="font-medium">Payment Method</h3>
+                  <div className="p-4 border rounded-lg bg-muted/50">
+                    <p className="text-sm text-muted-foreground">No payment method on file</p>
+                    <Button variant="outline" className="mt-2">
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Add Payment Method
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="font-medium">Billing History</h3>
+                  <div className="p-4 border rounded-lg bg-muted/50">
+                    <p className="text-sm text-muted-foreground">No billing history available</p>
+                    <p className="text-xs text-muted-foreground mt-1">You're currently on the free plan</p>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

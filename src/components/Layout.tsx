@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useAuth } from "../hooks/useAuth";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -40,6 +41,8 @@ const navigation = [
 
 export default function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   
@@ -217,9 +220,9 @@ export default function Layout() {
                 <User className="h-8 w-8 text-primary-foreground" />
               </div>
               <div>
-                <h3 className="text-lg font-medium">John Doe</h3>
-                <p className="text-sm text-muted-foreground">john.doe@example.com</p>
-                <Badge variant="secondary">Pro Plan</Badge>
+                <h3 className="text-lg font-medium">{user?.user_metadata?.name || user?.email?.split('@')[0] || 'User'}</h3>
+                 <p className="text-sm text-muted-foreground">{user?.email || 'user@example.com'}</p>
+                 <Badge variant="secondary">Free Plan</Badge>
               </div>
             </div>
             
@@ -228,8 +231,8 @@ export default function Layout() {
                 variant="outline" 
                 className="w-full justify-start"
                 onClick={() => {
-                  toast.success('Edit Profile opened');
                   setShowProfile(false);
+                  navigate('/settings?tab=profile');
                 }}
               >
                 <User className="h-4 w-4 mr-2" />
@@ -239,8 +242,8 @@ export default function Layout() {
                 variant="outline" 
                 className="w-full justify-start"
                 onClick={() => {
-                  toast.success('Account Settings opened');
                   setShowProfile(false);
+                  navigate('/settings?tab=profile');
                 }}
               >
                 <Settings className="h-4 w-4 mr-2" />
@@ -250,8 +253,8 @@ export default function Layout() {
                 variant="outline" 
                 className="w-full justify-start"
                 onClick={() => {
-                  toast.success('Billing & Subscription opened');
                   setShowProfile(false);
+                  navigate('/settings?tab=billing');
                 }}
               >
                 <CreditCard className="h-4 w-4 mr-2" />
@@ -261,8 +264,8 @@ export default function Layout() {
                 variant="outline" 
                 className="w-full justify-start"
                 onClick={() => {
-                  toast.success('Privacy & Security opened');
                   setShowProfile(false);
+                  navigate('/settings?tab=security');
                 }}
               >
                 <Shield className="h-4 w-4 mr-2" />
@@ -274,10 +277,15 @@ export default function Layout() {
               <Button 
                 variant="ghost" 
                 className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-                onClick={() => {
-                  toast.success('Signed out successfully');
-                  setShowProfile(false);
-                }}
+                onClick={async () => {
+                   try {
+                     await signOut();
+                     setShowProfile(false);
+                     navigate('/login');
+                   } catch (error) {
+                     toast.error('Failed to sign out');
+                   }
+                 }}
               >
                 Sign Out
               </Button>

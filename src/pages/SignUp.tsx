@@ -6,13 +6,16 @@ import { Code2, Github, Mail, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../hooks/useAuth";
 
-export default function Login() {
+export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn, user } = useAuth();
+  const { signUp, user } = useAuth();
 
   // Redirect if already logged in
   useEffect(() => {
@@ -21,25 +24,37 @@ export default function Login() {
     }
   }, [user, navigate]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      toast.error("Passwords don't match");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters long");
+      return;
+    }
+
     setIsLoading(true);
     
     try {
-      const result = await signIn(email, password);
+      const result = await signUp(email, password, fullName);
       if (result.success) {
-        navigate("/dashboard");
+        toast.success("Account created successfully! Please check your email to verify your account.");
+        navigate("/login");
       }
     } catch (error) {
-      console.error('Authentication error:', error);
+      console.error('Sign up error:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    toast.success(`Logging in with ${provider}...`);
-    navigate("/");
+  const handleSocialSignUp = (provider: string) => {
+    toast.success(`Signing up with ${provider}...`);
+    // This would integrate with Supabase social auth
   };
 
   return (
@@ -54,19 +69,33 @@ export default function Login() {
             <span className="text-3xl font-bold text-gray-900">PromptOps</span>
           </div>
           <p className="text-gray-600">
-            The definitive platform for AI prompt management
+            Join the definitive platform for AI prompt management
           </p>
         </div>
 
         <Card>
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Welcome back</CardTitle>
+            <CardTitle className="text-2xl text-center">Create your account</CardTitle>
             <CardDescription className="text-center">
-              Sign in to your account to continue
+              Sign up to start managing your AI prompts
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleSignUp} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="fullName" className="text-sm font-medium">
+                  Full Name
+                </label>
+                <input
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Enter your full name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  required
+                />
+              </div>
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium">
                   Email
@@ -91,9 +120,10 @@ export default function Login() {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
+                    placeholder="Create a password"
                     className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     required
+                    minLength={6}
                   />
                   <button
                     type="button"
@@ -104,8 +134,32 @@ export default function Login() {
                   </button>
                 </div>
               </div>
+              <div className="space-y-2">
+                <label htmlFor="confirmPassword" className="text-sm font-medium">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing In..." : "Sign In"}
+                {isLoading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
 
@@ -123,7 +177,7 @@ export default function Login() {
             <div className="grid grid-cols-2 gap-4">
               <Button
                 variant="outline"
-                onClick={() => handleSocialLogin("Google")}
+                onClick={() => handleSocialSignUp("Google")}
                 className="w-full"
               >
                 <Mail className="h-4 w-4 mr-2" />
@@ -131,7 +185,7 @@ export default function Login() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => handleSocialLogin("GitHub")}
+                onClick={() => handleSocialSignUp("GitHub")}
                 className="w-full"
               >
                 <Github className="h-4 w-4 mr-2" />
@@ -140,9 +194,9 @@ export default function Login() {
             </div>
 
             <div className="text-center text-sm">
-              <span className="text-muted-foreground">Don't have an account? </span>
-              <Link to="/signup" className="text-primary hover:underline">
-                Sign up
+              <span className="text-muted-foreground">Already have an account? </span>
+              <Link to="/login" className="text-primary hover:underline">
+                Sign in
               </Link>
             </div>
           </CardContent>
