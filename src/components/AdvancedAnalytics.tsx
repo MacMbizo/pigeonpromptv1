@@ -101,7 +101,7 @@ export default function AdvancedAnalytics() {
         <div>
           <h1 className="text-3xl font-bold">Advanced Analytics</h1>
           <p className="text-muted-foreground">
-            Comprehensive insights into your PromptOps platform performance
+            Comprehensive insights into your PigeonPrompt platform performance
           </p>
         </div>
         

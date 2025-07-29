@@ -246,7 +246,7 @@ const CommunityFeatures = () => {
   };
 
   const handleShare = (promptId: string) => {
-    navigator.clipboard.writeText(`https://promptops.com/community/prompts/${promptId}`);
+    navigator.clipboard.writeText(`https://pigeonprompt.com/community/prompts/${promptId}`);
     toast.success("Share link copied to clipboard!");
   };
 

@@ -137,7 +137,7 @@ const CollaborationPanel = ({ promptId, isOpen, onClose }: CollaborationPanelPro
   };
 
   const handleSharePrompt = () => {
-    navigator.clipboard.writeText(`https://promptops.com/prompts/${promptId}`);
+    navigator.clipboard.writeText(`https://pigeonprompt.com/prompts/${promptId}`);
     toast.success("Share link copied to clipboard");
   };
 
@@ -402,7 +402,7 @@ const CollaborationPanel = ({ promptId, isOpen, onClose }: CollaborationPanelPro
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      value={`https://promptops.com/prompts/${promptId}`}
+                      value={`https://pigeonprompt.com/prompts/${promptId}`}
                       readOnly
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
                     />

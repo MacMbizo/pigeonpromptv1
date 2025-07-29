@@ -85,7 +85,7 @@ export default function PromptIDE() {
 
   const handleSave = () => {
     // Save to localStorage (mock backend)
-    const prompts = JSON.parse(localStorage.getItem('promptops_prompts') || '[]');
+    const prompts = JSON.parse(localStorage.getItem('pigeonprompt_prompts') || '[]');
     const existingIndex = prompts.findIndex((p: any) => p.name === promptName);
     
     const promptData = {
@@ -104,12 +104,12 @@ export default function PromptIDE() {
       prompts.push(promptData);
     }
     
-    localStorage.setItem('promptops_prompts', JSON.stringify(prompts));
+    localStorage.setItem('pigeonprompt_prompts', JSON.stringify(prompts));
     toast.success(`Prompt '${promptName}' saved to your workspace`);
   };
   
   const handleSaveSettings = () => {
-    localStorage.setItem('promptops_editor_settings', JSON.stringify(editorSettings));
+    localStorage.setItem('pigeonprompt_editor_settings', JSON.stringify(editorSettings));
     toast.success('Editor settings saved successfully!');
     setShowSettings(false);
   };

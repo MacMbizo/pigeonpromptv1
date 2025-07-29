@@ -235,7 +235,7 @@ export default function PromptHub() {
     }
     
     // Save to localStorage (mock backend)
-    const prompts = JSON.parse(localStorage.getItem('promptops_prompts') || '[]');
+    const prompts = JSON.parse(localStorage.getItem('pigeonprompt_prompts') || '[]');
     const newPrompt = {
       id: Date.now(),
       name: newPromptData.name,
@@ -254,7 +254,7 @@ export default function PromptHub() {
     };
     
     prompts.push(newPrompt);
-    localStorage.setItem('promptops_prompts', JSON.stringify(prompts));
+    localStorage.setItem('pigeonprompt_prompts', JSON.stringify(prompts));
     
     toast.success(`Prompt "${newPromptData.name}" created successfully!`);
     setShowNewPrompt(false);
@@ -274,14 +274,14 @@ export default function PromptHub() {
   };
   
   const handleShareViaLink = () => {
-    navigator.clipboard.writeText(`https://promptops.com/prompts/${selectedPromptToShare?.id}`);
+    navigator.clipboard.writeText(`https://pigeonprompt.com/prompts/${selectedPromptToShare?.id}`);
     toast.success('Share link copied to clipboard!');
     setShowSharePrompt(false);
   };
   
   const handleShareViaEmail = () => {
     const subject = `Check out this prompt: ${selectedPromptToShare?.name}`;
-    const body = `I found this great prompt on PromptOps: ${selectedPromptToShare?.description}\n\nView it here: https://promptops.com/prompts/${selectedPromptToShare?.id}`;
+    const body = `I found this great prompt on PigeonPrompt: ${selectedPromptToShare?.description}\n\nView it here: https://pigeonprompt.com/prompts/${selectedPromptToShare?.id}`;
     window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
     setShowSharePrompt(false);
   };

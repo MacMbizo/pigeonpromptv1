@@ -17,7 +17,7 @@ export default function Login() {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      navigate("/");
     }
   }, [user, navigate]);
 
@@ -28,7 +28,7 @@ export default function Login() {
     try {
       const result = await signIn(email, password);
       if (result.success) {
-        navigate("/dashboard");
+        navigate("/");
       }
     } catch (error) {
       console.error('Authentication error:', error);
@@ -51,7 +51,7 @@ export default function Login() {
             <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center">
               <Code2 className="h-7 w-7 text-primary-foreground" />
             </div>
-            <span className="text-3xl font-bold text-gray-900">PromptOps</span>
+            <span className="text-3xl font-bold text-gray-900">PigeonPrompt</span>
           </div>
           <p className="text-gray-600">
             The definitive platform for AI prompt management

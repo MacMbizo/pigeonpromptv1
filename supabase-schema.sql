@@ -1,4 +1,4 @@
--- PromptOps Database Schema
+-- PigeonPrompt Database Schema
 -- Run this in your Supabase SQL Editor to create the required tables
 
 -- Enable Row Level Security
@@ -128,7 +128,7 @@ CREATE INDEX IF NOT EXISTS idx_workflows_created_at ON public.workflows(created_
 
 -- Insert some sample data (optional)
 INSERT INTO public.prompts (title, content, user_id, is_public, tags) VALUES
-('Welcome Prompt', 'Welcome to PromptOps! This is a sample prompt to get you started.', (SELECT id FROM auth.users LIMIT 1), true, ARRAY['welcome', 'sample']),
+('Welcome Prompt', 'Welcome to PigeonPrompt! This is a sample prompt to get you started.', (SELECT id FROM auth.users LIMIT 1), true, ARRAY['welcome', 'sample']),
 ('Code Review Assistant', 'You are a helpful code review assistant. Please review the following code and provide constructive feedback.', (SELECT id FROM auth.users LIMIT 1), true, ARRAY['code', 'review', 'assistant'])
 ON CONFLICT DO NOTHING;
 

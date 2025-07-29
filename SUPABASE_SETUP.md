@@ -1,19 +1,19 @@
-# PromptOps Supabase Backend Setup Guide
+# PigeonPrompt Supabase Backend Setup Guide
 
-This guide will help you set up the Supabase backend for your PromptOps application.
+This guide will help you set up the Supabase backend for your PigeonPrompt application.
 
 ## Prerequisites
 
 - A Supabase account (sign up at [supabase.com](https://supabase.com))
 - Node.js and npm installed
-- The PromptOps application code
+- The PigeonPrompt application code
 
 ## Step 1: Create a Supabase Project
 
 1. Go to [supabase.com](https://supabase.com) and sign in
 2. Click "New Project"
 3. Choose your organization
-4. Enter a project name (e.g., "promptops")
+4. Enter a project name (e.g., "pigeonprompt")
 5. Enter a database password (save this securely)
 6. Select a region close to your users
 7. Click "Create new project"
@@ -171,8 +171,8 @@ This will create:
 
 For issues with:
 - **Supabase**: Check [Supabase Documentation](https://supabase.com/docs)
-- **PromptOps**: Check the application logs and console errors
+- **PigeonPrompt**: Check the application logs and console errors
 
 ---
 
-**Congratulations!** Your PromptOps application is now connected to a real Supabase backend with authentication, data persistence, and real-time capabilities.
+**Congratulations!** Your PigeonPrompt application is now connected to a real Supabase backend with authentication, data persistence, and real-time capabilities.

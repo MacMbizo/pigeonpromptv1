@@ -112,7 +112,7 @@ export default function Layout() {
                 <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                   <Code2 className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <span className="text-xl font-bold text-foreground">PromptOps</span>
+                <span className="text-xl font-bold text-foreground">PigeonPrompt</span>
               </div>
             </div>
 
